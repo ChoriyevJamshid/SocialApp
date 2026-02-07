@@ -1,21 +1,24 @@
 from django.shortcuts import render
 from django.http import HttpResponse
-from django.contrib.auth import authenticate, login, views as auth_views
+from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 
-from account.forms import LoginForm, UserRegistrationForm
+from account.forms import (LoginForm,
+                           UserRegistrationForm,
+                           UserEditForm,
+                           ProfileEditForm)
 
 
 def user_login_view(request):
-
     if request.method == 'POST':
         form = LoginForm(request.POST)
         if form.is_valid():
             cd = form.cleaned_data
             user = authenticate(request,
-                username=cd['username'],
-                password=cd['password']
-            )
+                                username=cd['username'],
+                                password=cd['password']
+                                )
 
             if user is not None:
                 if user.is_active:
@@ -41,11 +44,9 @@ def dashboard(request):
 
 
 def register(request):
-
     if request.method == 'POST':
         user_form = UserRegistrationForm(request.POST)
         if user_form.is_valid():
-
             new_user = user_form.save(commit=False)
             new_user.set_password(
                 user_form.cleaned_data['password']
@@ -63,10 +64,43 @@ def register(request):
                   {'user_form': user_form})
 
 
+@login_required
+def edit_profile(request):
+
+    if request.method == 'POST':
+
+        print(f"\n{request.POST = }\n")
+
+        user_form = UserEditForm(instance=request.user,
+                                 data=request.POST)
+        profile_form = ProfileEditForm(instance=request.user.profile,
+                                       data=request.POST)
+
+        if user_form.is_valid() and profile_form.is_valid():
+            print(f"\n{user_form = }\n")
+            print(f"\n{profile_form = }\n")
+            user_form.save()
+            profile_form.save()
+            messages.success(request, "Your profile was successfully updated!")
+
+        else:
+            messages.error(request, "Error updating your profile")
+
+    else:
+        user_form = UserEditForm(instance=request.user)
+        profile_form = ProfileEditForm(instance=request.user.profile)
+
+    return render(request,
+                  'account/edit.html',
+                  {'user_form': user_form,
+                   'profile_form': profile_form})
 
 
-# class CustomLoginView(auth_views.LoginView):
-#     template_name = 'account/login.html'
+
+
+
+
+
 
 
 

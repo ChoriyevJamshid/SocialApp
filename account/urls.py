@@ -33,6 +33,8 @@ urlpatterns = [
 
     path('register/', views.register, name='register'),
 
+    path("edit/", views.edit_profile, name="edit")
+
 ]
 
 

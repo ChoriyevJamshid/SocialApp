@@ -3,16 +3,15 @@ from django.contrib.auth.models import User
 
 from account.models import Profile
 
-class LoginForm(forms.Form):
 
+class LoginForm(forms.Form):
     username = forms.CharField()
     password = forms.CharField(widget=forms.PasswordInput)
 
 
 class UserRegistrationForm(forms.ModelForm):
-
     password = forms.CharField(label="Password",
-                                widget=forms.PasswordInput)
+                               widget=forms.PasswordInput)
     password2 = forms.CharField(label="Repeat Password",
                                 widget=forms.PasswordInput)
 
@@ -29,17 +28,35 @@ class UserRegistrationForm(forms.ModelForm):
 
         return password
 
+    def clean_email(self):
+
+        email = self.cleaned_data.get('email')
+        if User.objects.filter(email=email).exists():
+            raise forms.ValidationError("Email already exists")
+        return email
+
 
 class UserEditForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'email']
 
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+
+        user_exists = (
+            User.objects
+            .exclude(id=self.instance.id)
+            .filter(email=email)
+            .exists()
+        )
+
+        if user_exists:
+            raise forms.ValidationError("Email already exists")
+        return email
+
 
 class ProfileEditForm(forms.ModelForm):
     class Meta:
         model = Profile
         fields = ['birth_of_date', 'photo']
-
-
-

@@ -1,4 +1,5 @@
 from django.db import models
+from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.utils.text import slugify
 
@@ -31,6 +32,12 @@ class Image(models.Model):
         if not self.slug:
             self.slug = slugify(self.title)
         super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return reverse('images:detail', kwargs={
+            "image_id": self.pk,
+            "slug": self.slug
+        })
 
     def __str__(self):
         return self.title

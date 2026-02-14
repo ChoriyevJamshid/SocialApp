@@ -30,7 +30,10 @@ LOCAL_APPS = [
     'images.apps.ImagesConfig',
 ]
 
-THIRD_PARTY_APPS = ['social_django']
+THIRD_PARTY_APPS = [
+    'social_django',
+    'easy_thumbnails',
+]
 
 INSTALLED_APPS.extend(LOCAL_APPS)
 INSTALLED_APPS.extend(THIRD_PARTY_APPS)
@@ -141,8 +144,8 @@ CSRF_TRUSTED_ORIGINS = [
 
 # Google Oauth settings
 
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = "794427761787-ffsrnlelomnftepqoiksp7i3hh85vfi0.apps.googleusercontent.com"
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = "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"
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = "XXX"
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = "XXX"
 SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
     'https://www.googleapis.com/auth/userinfo.email',
     'https://www.googleapis.com/auth/userinfo.profile',

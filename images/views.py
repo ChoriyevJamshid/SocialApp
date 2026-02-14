@@ -1,13 +1,51 @@
-from django.shortcuts import render, redirect
+from django.http import JsonResponse, HttpResponse
+from django.views.decorators.http import require_POST
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 
 from images.forms import ImageCreateForm
+from images.models import Image
+
+
+@login_required
+@require_POST
+def image_like(request):
+    image_id = request.POST.get('id')
+    action = request.POST.get('action')
+
+    if image_id and action:
+        try:
+            image = Image.objects.get(pk=image_id)
+            if action == 'like':
+                image.user_likes.add(request.user)
+            else:
+                image.user_likes.remove(request.user)
+
+            return JsonResponse({"status": "ok"})
+        except Image.DoesNotExist:
+            pass
+
+    return JsonResponse({"status": "error"})
+
+
+def image_detail(request, image_id, slug):
+    image = get_object_or_404(Image,
+                              id=image_id,
+                              slug=slug)
+    context = {
+        'section': 'images',
+        'image': image,
+    }
+    return render(request,
+                  'images/image/detail.html',
+                  context=context)
 
 
 @login_required
 def image_create(request):
-
     if request.method == 'POST':
         form = ImageCreateForm(data=request.POST)
         if form.is_valid():
@@ -32,5 +70,30 @@ def image_create(request):
                   context=context)
 
 
+@login_required
+def image_list(request):
+    images = Image.objects.all()
+    paginator = Paginator(images, 5)
+    page = request.GET.get('page')
+    images_only = request.GET.get('images_only')
 
+    try:
+        images = paginator.page(page)
+    except PageNotAnInteger:
+        images = paginator.page(1)
+    except EmptyPage:
+        if images_only:
+            return HttpResponse('')
 
+        images = paginator.page(paginator.num_pages)
+
+    context = {'section': 'images',
+               'images': images, }
+    if images_only:
+        return render(request,
+                      'images/image/list_images.html',
+                     context=context)
+
+    return render(request,
+                  'images/image/list.html',
+                  context=context)

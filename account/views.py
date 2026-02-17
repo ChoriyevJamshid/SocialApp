@@ -1,13 +1,17 @@
-from django.shortcuts import render
-from django.http import HttpResponse
-from django.contrib.auth import authenticate, login
+from django.shortcuts import render, get_object_or_404
+from django.http import HttpResponse, JsonResponse
+from django.contrib.auth import authenticate, login, get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.views.decorators.http import require_POST
 
 from account.forms import (LoginForm,
                            UserRegistrationForm,
                            UserEditForm,
                            ProfileEditForm)
+from account.models import Profile, Contact
+
+User = get_user_model()
 
 
 def user_login_view(request):
@@ -52,6 +56,7 @@ def register(request):
                 user_form.cleaned_data['password']
             )
             new_user.save()
+            Profile.objects.create(user=new_user)
 
             return render(request,
                           'account/register_done.html',
@@ -74,7 +79,8 @@ def edit_profile(request):
         user_form = UserEditForm(instance=request.user,
                                  data=request.POST)
         profile_form = ProfileEditForm(instance=request.user.profile,
-                                       data=request.POST)
+                                       data=request.POST,
+                                       files=request.FILES)
 
         if user_form.is_valid() and profile_form.is_valid():
             print(f"\n{user_form = }\n")
@@ -96,7 +102,63 @@ def edit_profile(request):
                    'profile_form': profile_form})
 
 
+@login_required
+def user_list(request):
 
+    users = User.objects.filter(is_active=True)
+    return render(request,
+                  'account/user/list.html',
+                  {
+                      'section': 'people',
+                      'users': users
+                  })
+
+
+@login_required
+def user_detail(request, username):
+    user = get_object_or_404(User,
+                             username=username,
+                             is_active=True)
+
+    return render(request,
+                  'account/user/detail.html',
+                  {
+                      'section': 'people',
+                      'user': user
+                  })
+
+
+@login_required
+@require_POST
+def user_follow(request):
+
+    print("\nWORKING USER FOLLOW VIEW\n")
+    print(request.POST)
+
+    user_id = request.POST.get('id')
+    action = request.POST.get('action')
+
+    print(user_id, action)
+
+    if user_id and action:
+        try:
+            user = User.objects.get(pk=user_id)
+            print(f"{user = }")
+            if action == 'follow':
+                Contact.objects.get_or_create(
+                    user_from=request.user,
+                    user_to=user
+                )
+            else:
+                Contact.objects.filter(user_from=request.user,
+                                       user_to=user).delete()
+
+            return JsonResponse({"status": "ok"})
+
+        except User.DoesNotExist:
+            return JsonResponse({"status": "error"})
+
+    return JsonResponse({"status": "error"})
 
 
 

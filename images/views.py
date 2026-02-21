@@ -9,6 +9,8 @@ from django.contrib import messages
 from images.forms import ImageCreateForm
 from images.models import Image
 
+from actions.utils import create_action
+
 
 @login_required
 @require_POST
@@ -21,6 +23,7 @@ def image_like(request):
             image = Image.objects.get(pk=image_id)
             if action == 'like':
                 image.user_likes.add(request.user)
+                create_action(request.user, 'likes', image)
             else:
                 image.user_likes.remove(request.user)
 
@@ -32,9 +35,19 @@ def image_like(request):
 
 
 def image_detail(request, image_id, slug):
-    image = get_object_or_404(Image,
-                              id=image_id,
-                              slug=slug)
+    # image = get_object_or_404(Image,
+    #                           id=image_id,
+    #                           slug=slug)
+
+    image = (Image.objects
+             .filter(id=image_id, slug=slug)
+             .prefetch_related("user_likes")
+             .first()
+             )
+
+    if not image:
+        return HttpResponse(status=404)
+
     context = {
         'section': 'images',
         'image': image,
@@ -53,6 +66,7 @@ def image_create(request):
             new_image = form.save(commit=False)
             new_image.user = request.user
             new_image.save()
+            create_action(request.user, 'bookmarked image', new_image)
             messages.success(request,
                              message="Image successfully created!")
             return redirect(new_image.get_absolute_url())

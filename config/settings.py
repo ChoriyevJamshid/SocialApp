@@ -30,17 +30,20 @@ INSTALLED_APPS = [
 
 LOCAL_APPS = [
     'images.apps.ImagesConfig',
+    'actions.apps.ActionsConfig',
 ]
 
 THIRD_PARTY_APPS = [
     'social_django',
     'easy_thumbnails',
+    'debug_toolbar',
 ]
 
 INSTALLED_APPS.extend(LOCAL_APPS)
 INSTALLED_APPS.extend(THIRD_PARTY_APPS)
 
 MIDDLEWARE = [
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -174,3 +177,9 @@ ABSOLUTE_URL_OVERRIDES = {
     'auth.user': lambda u: reverse_lazy('user_detail',
                                         args=[u.username]),
 }
+
+
+INTERNAL_IPS = [
+    '127.0.0.1',
+]
+

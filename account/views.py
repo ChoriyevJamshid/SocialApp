@@ -10,6 +10,8 @@ from account.forms import (LoginForm,
                            UserEditForm,
                            ProfileEditForm)
 from account.models import Profile, Contact
+from actions.models import Action
+from actions.utils import create_action
 
 User = get_user_model()
 
@@ -42,9 +44,20 @@ def user_login_view(request):
 
 @login_required
 def dashboard(request):
+    actions = Action.objects.exclude(user=request.user)
+    following_ids = request.user.following.values_list('id', flat=True)
+
+    if following_ids:
+        actions = actions.filter(user_id__in=following_ids)
+
+    actions = actions.select_related(
+        "user", "user__profile"
+    ).prefetch_related("target")[:10]
+
     return render(request,
                   'account/dashboard.html',
-                  {'section': 'dashboard'})
+                  {'section': 'dashboard',
+                   'actions': actions})
 
 
 def register(request):
@@ -57,6 +70,7 @@ def register(request):
             )
             new_user.save()
             Profile.objects.create(user=new_user)
+            create_action(new_user, 'has created an account')
 
             return render(request,
                           'account/register_done.html',
@@ -71,7 +85,6 @@ def register(request):
 
 @login_required
 def edit_profile(request):
-
     if request.method == 'POST':
 
         print(f"\n{request.POST = }\n")
@@ -104,7 +117,6 @@ def edit_profile(request):
 
 @login_required
 def user_list(request):
-
     users = User.objects.filter(is_active=True)
     return render(request,
                   'account/user/list.html',
@@ -131,7 +143,6 @@ def user_detail(request, username):
 @login_required
 @require_POST
 def user_follow(request):
-
     print("\nWORKING USER FOLLOW VIEW\n")
     print(request.POST)
 
@@ -149,6 +160,7 @@ def user_follow(request):
                     user_from=request.user,
                     user_to=user
                 )
+                create_action(request.user, 'is following', user)
             else:
                 Contact.objects.filter(user_from=request.user,
                                        user_to=user).delete()
@@ -159,10 +171,3 @@ def user_follow(request):
             return JsonResponse({"status": "error"})
 
     return JsonResponse({"status": "error"})
-
-
-
-
-
-
-
